@@ -17,6 +17,7 @@ obj = Network(str(file_input))
 obj.connect()
 path = obj.find_paths('A','B')
 print(path)
+obj.draw()
 
 # Then propagate a Signal Information object of 1mW in the network and save the results in a dataframe.
 # Convert this dataframe in a csv file called 'weighted_path' and finally plot the network.

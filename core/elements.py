@@ -1,7 +1,7 @@
 import json
-
 from core.parameters import c
 import math
+import matplotlib.pyplot as plt
 
 
 class Signal_information(object):
@@ -112,7 +112,6 @@ class Line(object):
     def latency_generation(self):
         latency_gen = self._len_line / (c * 2 / 3)
         return latency_gen
-        #print(latency_gen)
 
     def noise_generation(self,signal_power:float):
         noise_gen = 1e-9 * signal_power * self._len_line
@@ -167,6 +166,23 @@ class Network(object):
 
     def draw(self):
         pass
+        for id_node in self._nodes:
+            x0 = self._nodes[id_node].position[0]
+            y0 = self._nodes[id_node].position[1]
+            plt.plot(x0,y0,'yo',markersize=10)
+            plt.text(x0+20,y0+20,id_node)
+
+            for con_node in self._nodes[id_node].connected_nodes:
+                x1 = self._nodes[con_node].position[0]
+                y1 = self._nodes[con_node].position[1]
+                plt.plot([x0,x1],[y0,y1],'r')
+
+        plt.title('Network')
+        plt.xlabel('x [m]')
+        plt.ylabel('y [m]')
+        plt.grid()
+        plt.savefig("C:\\Users\\justv\\PycharmProjects\\lab3-network-WilliamHusanu\\Results\\Link_map",dpi=150)
+
 
     # find_paths: given two node labels, returns all paths that connect the 2 nodes
     # as a list of node labels. Admissible path only if cross any node at most once
@@ -212,22 +228,6 @@ class Network(object):
                                                     if (con_con_con_node == label2):
                                                         found_paths_final.append(list_tmp+con_con_con_node)
         return found_paths_final
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
