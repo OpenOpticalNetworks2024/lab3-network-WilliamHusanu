@@ -171,19 +171,47 @@ class Network(object):
     # find_paths: given two node labels, returns all paths that connect the 2 nodes
     # as a list of node labels. Admissible path only if cross any node at most once
     def find_paths(self, label1, label2):
-        pass
-        #example
-        #label1 : A
-        #label2 : B
         found_paths = []
+        found_paths_final = []
+
         for id_line in self._lines:
             if(self._lines[id_line].label[0] == label1):
                 #selecting the end of my starting line
                 target = self._lines[id_line].label[1]
+                #if my target is label2
                 if(target == label2):
                     found_paths.append(id_line)
+                #if not i have to scan the connected_node of target
                 else:
-                    print(id_line)
+                    for con_node in self._nodes[target].connected_nodes:
+                        if(label1 != con_node):
+                            found_paths.append(label1+target+con_node)
+
+        #created here a list just to help me in the scanning
+        for id_list in found_paths:
+            len_tmp_list = len(id_list)
+            if(id_list[0] == label1)and(id_list[len_tmp_list-1] == label2):
+                #if label2 is already in the string inside the list
+                found_paths_final.append(id_list)
+            else:
+                #if not i have to scan using the connected node of the connected node of target
+                for con_node in self._nodes[id_list[len_tmp_list-1]].connected_nodes:
+                    if(not(con_node in id_list)):
+                        if(con_node == label2):
+                            found_paths_final.append(id_list+label2)
+                        else:
+                            for con_con_node in self._nodes[con_node].connected_nodes:
+                                if(not(con_node in id_list)):
+                                    if(not(con_con_node in id_list)):
+                                        if(con_con_node == label2):
+                                            found_paths_final.append(id_list+con_node+con_con_node)
+                                        else:
+                                            for con_con_con_node in self._nodes[con_con_node].connected_nodes:
+                                                list_tmp = id_list+con_node+con_con_node
+                                                if(not(con_con_con_node in list_tmp)):
+                                                    if (con_con_con_node == label2):
+                                                        found_paths_final.append(list_tmp+con_con_con_node)
+        return found_paths_final
 
 
 
@@ -195,7 +223,11 @@ class Network(object):
 
 
 
-        print(found_paths)
+
+
+
+
+
 
 
 
