@@ -1,7 +1,10 @@
 import json
 from core.parameters import c
+from core.parameters import c1
 import math
 import matplotlib.pyplot as plt
+from core.math_utils import snr
+import pandas as pd
 
 
 class Signal_information(object):
@@ -29,7 +32,6 @@ class Signal_information(object):
 
     def update_noise_power(self,increment_np:float):
         self._noise_power += increment_np
-        print("Noise_power :", self._noise_power)
 
     @property
     def latency(self):
@@ -41,7 +43,6 @@ class Signal_information(object):
 
     def update_latency(self,increment_latency : float):
         self._latency += increment_latency
-        print("Latency :", self._latency)
 
     @property
     def path(self):
@@ -85,7 +86,14 @@ class Node(object):
 
 
     def propagate(self,signal_info : Signal_information):
-        pass
+        if(len(signal_info._path[0]) != 1):
+            id_line = signal_info.path[0][0] + signal_info.path[0][1]
+            signal_info.update_path()
+            return id_line
+        else:
+            signal_info.update_path()
+            id_line = "XX"
+            return id_line
 
 class Line(object):
     def __init__(self,id_line:str,len_line:float):
@@ -110,18 +118,19 @@ class Line(object):
         self._successive_line = successive_node
 
     def latency_generation(self):
-        latency_gen = self._len_line / (c * 2 / 3)
+        latency_gen = self._len_line / (c1 * 2 / 3)
         return latency_gen
 
     def noise_generation(self,signal_power:float):
         noise_gen = 1e-9 * signal_power * self._len_line
         return noise_gen
     def propagate(self,sig_info : Signal_information):
-        laty = self.latency_generation()
-        noisy = self.noise_generation(sig_info.signal_power)
-
-        sig_info.update_noise_power(noisy)
-        sig_info.update_latency(laty)
+        latency = self.latency_generation()
+        noise = self.noise_generation(sig_info.signal_power)
+        sig_info.update_latency(latency)
+        sig_info.update_noise_power(noise)
+        id_node = sig_info.path[0][0]
+        return id_node
 
 
 
@@ -155,6 +164,40 @@ class Network(object):
                 self._lines[id_line] = Line(id_line,leng)
 
 
+        self.connect()
+
+        #creation of dataframe
+        path_separ = "->"
+        tabel = []
+        column_list = ["path", "total latency", "total noise", "SNR [dB]"]
+
+        for id_node1 in self._nodes:
+            for id_node2 in self._nodes:
+                if(id_node1 != id_node2):
+                    for path in self.find_paths(id_node1,id_node2):
+                        total_latency = 0
+                        total_noise = 0
+                        #print(path)
+                        #print(len(path))
+
+                        for length in range(len(path)):
+                            if(length < len(path) - 1):
+                                #adding noise and latency for every path
+                                id_line = path[length] + path[length+1]
+                                total_latency = self._lines[id_line].latency_generation() + total_latency
+                                total_noise = self._lines[id_line].noise_generation(0.001) + total_noise
+                                #print(id_line)
+
+
+                        if(total_noise != 0):
+                           snr_evaluated = snr(total_noise)
+                           row_list =  [path_separ.join(path), total_latency,total_noise,snr_evaluated]
+                           tabel.append(row_list)
+
+        self._dataframe = pd.DataFrame(tabel, columns=column_list)
+        print(self._dataframe)
+
+
     @property
     def nodes(self):
         return self._nodes
@@ -163,7 +206,7 @@ class Network(object):
     def lines(self):
         return self._lines
 
-    def draw(self):
+    def draw(self,file:str):
         pass
         for id_node in self._nodes:
             x0 = self._nodes[id_node].position[0]
@@ -180,7 +223,7 @@ class Network(object):
         plt.xlabel('x [m]')
         plt.ylabel('y [m]')
         plt.grid()
-        plt.savefig("C:\\Users\\justv\\PycharmProjects\\lab3-network-WilliamHusanu\\Results\\Link_map",dpi=150)
+        plt.savefig(file,dpi=150)
 
 
     # find_paths: given two node labels, returns all paths that connect the 2 nodes
@@ -196,7 +239,7 @@ class Network(object):
                 #if my target is label2
                 if(target == label2):
                     found_paths.append(id_line)
-                #if not i have to scan the connected_node of target
+                #if not I have to scan the connected_node of target
                 else:
                     for con_node in self._nodes[target].connected_nodes:
                         if(label1 != con_node):
@@ -209,7 +252,7 @@ class Network(object):
                 #if label2 is already in the string inside the list
                 found_paths_final.append(id_list)
             else:
-                #if not i have to scan using the connected node of the connected node of target
+                #if not I have to scan using the connected node of the connected node of target
                 for con_node in self._nodes[id_list[len_tmp_list-1]].connected_nodes:
                     if(not(con_node in id_list)):
                         if(con_node == label2):
@@ -226,7 +269,6 @@ class Network(object):
                                                 if(not(con_con_con_node in list_tmp)):
                                                     if (con_con_con_node == label2):
                                                         found_paths_final.append(list_tmp+con_con_con_node)
-        print(found_paths_final)
         return found_paths_final
 
 
@@ -245,12 +287,7 @@ class Network(object):
                     tmp_dic[id_node].append(id_line)
             self._nodes[id_node].successive = tmp_dic[id_node]
             #self._nodes[id_node].successive.update({id_node:tmp_dic[id_node]})
-        print(self._nodes['A'].successive)
-        print(self._nodes['B'].successive)
-        print(self._nodes['C'].successive)
-        print(self._nodes['D'].successive)
-        print(self._nodes['E'].successive)
-        print(self._nodes['F'].successive)
+
         #implementing successive of lines
         for id_line in self._lines:
             for id_node in self._nodes:
@@ -260,4 +297,21 @@ class Network(object):
     # propagate signal_information through path specified in it
     # and returns the modified spectral information
     def propagate(self, signal_information):
-        pass
+        #choosing the first and last char of path
+        start_node = signal_information._path[0][0]
+        final_node = signal_information._path[0][-1]
+        #check if the path can exist
+        if(signal_information._path[0] in self.find_paths(start_node,final_node)):
+            #call the propagate of node
+            id_node = start_node
+            while(signal_information._path[0][0] != final_node):
+                id_line = self._nodes[id_node].propagate(signal_information)
+                #call the propagate of line
+                id_node = self._lines[id_line].propagate(signal_information)
+
+            #last call of propagate node so the path list is empty
+            id_line = self.nodes[id_node].propagate(signal_information)
+            #Delete the # for check if the list is empty
+            #print(signal_information._path)
+
+        return signal_information
