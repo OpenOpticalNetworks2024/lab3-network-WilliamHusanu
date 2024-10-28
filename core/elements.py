@@ -52,7 +52,8 @@ class Signal_information(object):
         self._path = setted_path
 
     def update_path(self):
-        pass
+        tmp_list_path = [self._path[0][1:]]
+        self._path = tmp_list_path
 
 
 class Node(object):
@@ -83,9 +84,8 @@ class Node(object):
         self._successive_node = successive_line
 
 
-    def propagate(self):
+    def propagate(self,signal_info : Signal_information):
         pass
-
 
 class Line(object):
     def __init__(self,id_line:str,len_line:float):
@@ -153,7 +153,6 @@ class Network(object):
                 id_line = id_node + con_node
                 #creating the Line
                 self._lines[id_line] = Line(id_line,leng)
-
 
 
     @property
@@ -227,6 +226,7 @@ class Network(object):
                                                 if(not(con_con_con_node in list_tmp)):
                                                     if (con_con_con_node == label2):
                                                         found_paths_final.append(list_tmp+con_con_con_node)
+        print(found_paths_final)
         return found_paths_final
 
 
@@ -234,15 +234,23 @@ class Network(object):
     # connect function set the successive attributes of all NEs as dicts
     # each node must have dict of lines and viceversa
     def connect(self):
-
         #implementing successive of node
         for id_node in self._nodes:
+            tmp_dic = {}
+            tmp_dic[id_node] = []
             for id_line in self._lines:
                 # Comparison between the Node and the first char of the string Line
                 if(id_node == self._lines[id_line].label[0]):
-                    self._nodes[id_node].successive = id_line
-
-
+                    #self._nodes[id_node].successive = tmp_dict_id_line_successive
+                    tmp_dic[id_node].append(id_line)
+            self._nodes[id_node].successive = tmp_dic[id_node]
+            #self._nodes[id_node].successive.update({id_node:tmp_dic[id_node]})
+        print(self._nodes['A'].successive)
+        print(self._nodes['B'].successive)
+        print(self._nodes['C'].successive)
+        print(self._nodes['D'].successive)
+        print(self._nodes['E'].successive)
+        print(self._nodes['F'].successive)
         #implementing successive of lines
         for id_line in self._lines:
             for id_node in self._nodes:
